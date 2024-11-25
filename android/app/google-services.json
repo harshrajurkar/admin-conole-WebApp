@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "278795036145",
+    "project_id": "admin-dashboard-8bb5b",
+    "storage_bucket": "admin-dashboard-8bb5b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:278795036145:android:77c4b4b98e0d9fdf6f1050",
+        "android_client_info": {
+          "package_name": "com.example.vrv_security"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUlr0ogjG22rzkOnxABfNsV3Kjxp1W_ew"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
