@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../widgets/custom_app_bar.dart';
 
@@ -78,7 +79,23 @@ class _PermissionManagementPageState extends State<PermissionManagementPage> {
                           setState(() {
                             permission["enabled"] = value ?? false;
                           });
-                          // TODO: Update permission in Firestore or backend
+                          Future<void> _updatePermission(String roleName,
+                              String permissionName, bool enabled) async {
+                            try {
+                              await FirebaseFirestore.instance
+                                  .collection('roles')
+                                  .doc(roleName)
+                                  .update({
+                                'permissions.$permissionName': enabled,
+                              });
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content:
+                                        Text('Error updating permission: $e')),
+                              );
+                            }
+                          }
                         },
                       );
                     }).toList(),

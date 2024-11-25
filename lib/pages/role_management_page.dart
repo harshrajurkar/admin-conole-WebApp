@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/role_form.dart';
 
-class RoleManagementPage extends StatelessWidget {
+class RoleManagementPage extends StatefulWidget {
   const RoleManagementPage({super.key});
 
+  @override
+  State<RoleManagementPage> createState() => _RoleManagementPageState();
+}
+
+class _RoleManagementPageState extends State<RoleManagementPage> {
   @override
   Widget build(BuildContext context) {
     final roles = ["Admin", "Editor", "Viewer"]; // Mock role list for now
