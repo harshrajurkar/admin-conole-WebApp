@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/role_form.dart';
@@ -12,7 +13,6 @@ class RoleManagementPage extends StatefulWidget {
 class _RoleManagementPageState extends State<RoleManagementPage> {
   @override
   Widget build(BuildContext context) {
-    final roles = ["Admin", "Editor", "Viewer"]; // Mock role list for now
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = screenWidth > 600;
 
@@ -43,46 +43,97 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
 
               // Role List
               Expanded(
-                child: ListView.builder(
-                  itemCount: roles.length,
-                  itemBuilder: (context, index) {
-                    return Card(
-                      elevation: 5,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                        title: Text(
-                          roles[index],
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Edit button
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) =>
-                                      RoleForm(roleName: roles[index]),
-                                );
-                              },
-                            ),
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('roles')
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                            // Delete button
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () {
-                                // TODO: Add delete role logic
-                              },
+                    if (snapshot.hasError) {
+                      return const Center(child: Text('Error loading roles'));
+                    }
+
+                    final roles = snapshot.data?.docs ?? [];
+
+                    if (roles.isEmpty) {
+                      return const Center(child: Text('No roles found'));
+                    }
+
+                    return ListView.builder(
+                      itemCount: roles.length,
+                      itemBuilder: (context, index) {
+                        final roleData = roles[index];
+                        final roleName =
+                            roleData.id; // Document ID is the role name
+
+                        return Card(
+                          elevation: 5,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            title: Text(
+                              roleName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ],
-                        ),
-                      ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Edit button
+                                IconButton(
+                                  icon: const Icon(Icons.edit,
+                                      color: Colors.blue),
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (_) =>
+                                          RoleForm(roleName: roleName),
+                                    );
+                                  },
+                                ),
+
+                                // Delete button
+                                IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
+                                  onPressed: () async {
+                                    try {
+                                      // Firestore delete logic
+                                      await FirebaseFirestore.instance
+                                          .collection('roles')
+                                          .doc(roleName)
+                                          .delete();
+
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                'Role deleted successfully!')),
+                                      );
+                                    } catch (e) {
+                                      // Log the technical details
+                                      debugPrint('Firestore Error: $e');
+
+                                      // Show user-friendly error message
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                'Failed to delete role. Please try again later.')),
+                                      );
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),

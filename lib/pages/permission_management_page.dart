@@ -59,16 +59,23 @@ class _PermissionManagementPageState extends State<PermissionManagementPage> {
   Future<void> _updatePermission(
       String roleName, String permissionName, bool enabled) async {
     try {
-      await firestore
+      await FirebaseFirestore.instance
           .collection('roles')
           .doc(roleName)
           .update({'permissions.$permissionName': enabled});
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Permission updated successfully!')),
       );
     } catch (e) {
+      // Log the error
+      debugPrint('Firestore Error: $e');
+
+      // Show a user-friendly message
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating permission: $e')),
+        const SnackBar(
+            content:
+                Text('Failed to update permission. Please try again later.')),
       );
     }
   }
