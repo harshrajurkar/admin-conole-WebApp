@@ -38,12 +38,8 @@
 
 ## **Setup Instructions**
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/yourusername/vrv_security.git
-   cd vrv_security
-
-1. **Install dependencies:**
-Run the following command to install the required dependencies:
+### **1. Clone the repository**
+Run the following commands to clone the repository and navigate to the project directory:
 ```bash
-flutter pub get
+git clone https://github.com/yourusername/vrv_security.git
+cd vrv_security
