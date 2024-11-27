@@ -15,6 +15,8 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
+  bool _isStatsExpanded = true; // For toggling stats card
+
   // Stream to get the count of users
   Stream<int> _getUserCount() {
     return firestore
@@ -78,51 +80,81 @@ class _DashboardPageState extends State<DashboardPage> {
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
 
-                // Stats Row for Total Users, Active Users, and Roles
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    // Total Users Card
-                    StreamBuilder<int>(
-                      stream: _getUserCount(),
-                      builder: (context, snapshot) {
-                        final userCount = snapshot.data ?? 0;
-                        return _buildStatCard(
-                          'Total Users',
-                          userCount.toString(),
-                        );
-                      },
-                    ),
-
-                    // Active Users Card
-                    StreamBuilder<int>(
-                      stream: _getActiveUserCount(),
-                      builder: (context, snapshot) {
-                        final activeUserCount = snapshot.data ?? 0;
-                        return _buildStatCard(
-                          'Active Users',
-                          activeUserCount.toString(),
-                        );
-                      },
-                    ),
-
-                    // Total Roles Card
-                    StreamBuilder<int>(
-                      stream: _getRoleCount(),
-                      builder: (context, snapshot) {
-                        final roleCount = snapshot.data ?? 0;
-                        return _buildStatCard(
-                          'Total Roles',
-                          roleCount.toString(),
-                        );
-                      },
-                    ),
-                  ],
+                // Animated Expansion Panel for Stats
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: _isStatsExpanded
+                      ? Column(
+                          key: const ValueKey(1),
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                StreamBuilder<int>(
+                                  stream: _getUserCount(),
+                                  builder: (context, snapshot) {
+                                    final userCount = snapshot.data ?? 0;
+                                    return _buildStatCard(
+                                      'Total Users',
+                                      userCount.toString(),
+                                    );
+                                  },
+                                ),
+                                StreamBuilder<int>(
+                                  stream: _getActiveUserCount(),
+                                  builder: (context, snapshot) {
+                                    final activeUserCount = snapshot.data ?? 0;
+                                    return _buildStatCard(
+                                      'Active Users',
+                                      activeUserCount.toString(),
+                                    );
+                                  },
+                                ),
+                                StreamBuilder<int>(
+                                  stream: _getRoleCount(),
+                                  builder: (context, snapshot) {
+                                    final roleCount = snapshot.data ?? 0;
+                                    return _buildStatCard(
+                                      'Total Roles',
+                                      roleCount.toString(),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            ElevatedButton(
+                              onPressed: () => setState(() {
+                                _isStatsExpanded = false;
+                              }),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: Colors.blue.shade700,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              child: const Text("Hide Stats"),
+                            ),
+                          ],
+                        )
+                      : ElevatedButton.icon(
+                          key: const ValueKey(2),
+                          onPressed: () => setState(() {
+                            _isStatsExpanded = true;
+                          }),
+                          icon: const Icon(Icons.expand_more),
+                          label: const Text("Show Stats"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.blue.shade700,
+                          ),
+                        ),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
 
                 // Card container for buttons
                 Card(
@@ -135,7 +167,6 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Manage Users Button
                         _buildActionButton(
                           context,
                           icon: Icons.group,
@@ -152,8 +183,6 @@ class _DashboardPageState extends State<DashboardPage> {
                           isLargeScreen: isLargeScreen,
                         ),
                         const SizedBox(height: 20),
-
-                        // Manage Roles Button
                         _buildActionButton(
                           context,
                           icon: Icons.security,
@@ -170,8 +199,6 @@ class _DashboardPageState extends State<DashboardPage> {
                           isLargeScreen: isLargeScreen,
                         ),
                         const SizedBox(height: 20),
-
-                        // Manage Permissions Button
                         _buildActionButton(
                           context,
                           icon: Icons.lock,
@@ -201,15 +228,25 @@ class _DashboardPageState extends State<DashboardPage> {
 
   // Helper method to build stat cards
   Widget _buildStatCard(String label, String value) {
-    return Card(
-      shape: RoundedRectangleBorder(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      height: 100,
+      width: 100,
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 5,
+            spreadRadius: 1,
+          ),
+        ],
       ),
-      elevation: 5,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
+      child: Center(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               label,
@@ -217,8 +254,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 5),
             Text(
               value,
               style: const TextStyle(
@@ -264,7 +302,6 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // Method to handle logout
   void _logout() {
     Navigator.push(
       context,

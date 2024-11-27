@@ -13,7 +13,6 @@ class PermissionManagementPage extends StatefulWidget {
 class _PermissionManagementPageState extends State<PermissionManagementPage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  // Function to initialize roles if not present
   Future<void> _initializeRoles() async {
     try {
       final rolesCollection = await firestore.collection('roles').get();
@@ -21,27 +20,13 @@ class _PermissionManagementPageState extends State<PermissionManagementPage> {
       if (rolesCollection.docs.isEmpty) {
         // Add default roles
         await firestore.collection('roles').doc('Admin').set({
-          'permissions': {
-            'Read': true,
-            'Write': true,
-            'Delete': true,
-          },
+          'permissions': {'Read': true, 'Write': true, 'Delete': true},
         });
-
         await firestore.collection('roles').doc('Editor').set({
-          'permissions': {
-            'Read': true,
-            'Write': true,
-            'Delete': false,
-          },
+          'permissions': {'Read': true, 'Write': true, 'Delete': false},
         });
-
         await firestore.collection('roles').doc('Viewer').set({
-          'permissions': {
-            'Read': true,
-            'Write': false,
-            'Delete': false,
-          },
+          'permissions': {'Read': true, 'Write': false, 'Delete': false},
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -55,11 +40,10 @@ class _PermissionManagementPageState extends State<PermissionManagementPage> {
     }
   }
 
-  // Function to update permission
   Future<void> _updatePermission(
       String roleName, String permissionName, bool enabled) async {
     try {
-      await FirebaseFirestore.instance
+      await firestore
           .collection('roles')
           .doc(roleName)
           .update({'permissions.$permissionName': enabled});
@@ -68,14 +52,10 @@ class _PermissionManagementPageState extends State<PermissionManagementPage> {
         const SnackBar(content: Text('Permission updated successfully!')),
       );
     } catch (e) {
-      // Log the error
-      debugPrint('Firestore Error: $e');
-
-      // Show a user-friendly message
+      debugPrint('Error updating permissions: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content:
-                Text('Failed to update permission. Please try again later.')),
+            content: Text('Failed to update permission. Please try again.')),
       );
     }
   }
@@ -83,7 +63,7 @@ class _PermissionManagementPageState extends State<PermissionManagementPage> {
   @override
   void initState() {
     super.initState();
-    _initializeRoles(); // Initialize roles on page load
+    _initializeRoles();
   }
 
   @override
@@ -101,7 +81,6 @@ class _PermissionManagementPageState extends State<PermissionManagementPage> {
         child: StreamBuilder<QuerySnapshot>(
           stream: firestore.collection('roles').snapshots(),
           builder: (context, snapshot) {
-            // Handling connection state
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
@@ -112,14 +91,10 @@ class _PermissionManagementPageState extends State<PermissionManagementPage> {
               return const Center(child: Text('No roles available'));
             }
 
-            // Map the data safely
             final roles = snapshot.data!.docs.map((doc) {
               final data = doc.data() as Map<String, dynamic>? ?? {};
-
-              // Extract permissions safely
               final permissionsMap =
                   data['permissions'] as Map<String, dynamic>? ?? {};
-
               final permissions = permissionsMap.entries
                   .map((entry) => {
                         'name': entry.key.toString(),
@@ -127,25 +102,20 @@ class _PermissionManagementPageState extends State<PermissionManagementPage> {
                       })
                   .toList();
 
-              return {
-                'name': doc.id, // Role ID as role name
-                'permissions': permissions,
-              };
+              return {'name': doc.id, 'permissions': permissions};
             }).toList();
 
             return ListView.builder(
               itemCount: roles.length,
               itemBuilder: (context, index) {
                 final role = roles[index];
-
-                // Safely access role name and permissions
-                final roleName = role['name'] as String? ?? 'Unknown Role';
+                final roleName = role['name'] as String;
                 final permissions =
-                    role['permissions'] as List<Map<String, dynamic>>?;
+                    role['permissions'] as List<Map<String, dynamic>>;
 
-                return RoleTile(
+                return AnimatedRoleTile(
                   roleName: roleName,
-                  permissions: permissions ?? [],
+                  permissions: permissions,
                   updatePermission: _updatePermission,
                 );
               },
@@ -157,16 +127,57 @@ class _PermissionManagementPageState extends State<PermissionManagementPage> {
   }
 }
 
-class RoleTile extends StatelessWidget {
+class AnimatedRoleTile extends StatefulWidget {
   final String roleName;
   final List<Map<String, dynamic>> permissions;
   final Future<void> Function(String, String, bool) updatePermission;
 
-  const RoleTile({
+  const AnimatedRoleTile({
     required this.roleName,
     required this.permissions,
     required this.updatePermission,
+    super.key,
   });
+
+  @override
+  State<AnimatedRoleTile> createState() => _AnimatedRoleTileState();
+}
+
+class _AnimatedRoleTileState extends State<AnimatedRoleTile>
+    with SingleTickerProviderStateMixin {
+  bool _expanded = false;
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _toggleExpansion() {
+    setState(() {
+      _expanded = !_expanded;
+      if (_expanded) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -175,38 +186,40 @@ class RoleTile extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: ExpansionTile(
-        title: Text(
-          roleName,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+      child: Column(
+        children: [
+          ListTile(
+            title: Text(
+              widget.roleName,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            trailing: IconButton(
+              icon: Icon(
+                _expanded ? Icons.expand_less : Icons.expand_more,
+              ),
+              onPressed: _toggleExpansion,
+            ),
           ),
-        ),
-        children: permissions.map<Widget>((permission) {
-          final permissionName = permission['name'] as String;
-          final permissionEnabled = permission['enabled'] as bool;
-
-          // Use ValueNotifier for efficient updates
-          final ValueNotifier<bool> notifier =
-              ValueNotifier<bool>(permissionEnabled);
-
-          return ValueListenableBuilder<bool>(
-            valueListenable: notifier,
-            builder: (context, value, child) {
-              return CheckboxListTile(
-                title: Text(permissionName),
-                value: value,
-                onChanged: (bool? newValue) async {
-                  final isEnabled = newValue ?? false;
-                  notifier.value = isEnabled; // Update local state
-                  await updatePermission(
-                      roleName, permissionName, isEnabled); // Persist change
-                },
-              );
-            },
-          );
-        }).toList(),
+          SizeTransition(
+            sizeFactor: _animation,
+            child: Column(
+              children: widget.permissions.map((permission) {
+                final permissionName = permission['name'] as String;
+                final permissionEnabled = permission['enabled'] as bool;
+                return CheckboxListTile(
+                  title: Text(permissionName),
+                  value: permissionEnabled,
+                  onChanged: (bool? newValue) async {
+                    if (newValue != null) {
+                      await widget.updatePermission(
+                          widget.roleName, permissionName, newValue);
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+        ],
       ),
     );
   }

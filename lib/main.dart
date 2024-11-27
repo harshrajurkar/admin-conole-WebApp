@@ -29,7 +29,7 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       title: 'Admin Dashboard',
       theme: appTheme,
-      home: LoginPage(),
+      home: DashboardPage(),
     );
   }
 }
