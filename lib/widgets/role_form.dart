@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 
 class RoleForm extends StatefulWidget {
   final String? roleName; // For editing existing roles
+  final Map<String, bool>?
+      initialPermissions; // Initial permissions for editing
 
-  const RoleForm({super.key, this.roleName});
+  const RoleForm({super.key, this.roleName, this.initialPermissions});
 
   @override
   State<RoleForm> createState() => _RoleFormState();
@@ -22,7 +24,18 @@ class _RoleFormState extends State<RoleForm> {
     super.initState();
     if (widget.roleName != null) {
       _roleNameController.text = widget.roleName!;
-      // TODO: Load role permissions from Firestore here if editing
+      _loadRolePermissions(widget.initialPermissions);
+    }
+  }
+
+  // Function to load role permissions from Firestore
+  void _loadRolePermissions(Map<String, bool>? permissions) {
+    if (permissions != null) {
+      setState(() {
+        _readPermission = permissions['Read'] ?? false;
+        _writePermission = permissions['Write'] ?? false;
+        _deletePermission = permissions['Delete'] ?? false;
+      });
     }
   }
 

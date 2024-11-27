@@ -14,7 +14,6 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isLargeScreen = screenWidth > 600;
 
     return Scaffold(
       appBar: const CustomAppBar(title: "Role Management"),
@@ -30,7 +29,6 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              // Page title
               const Text(
                 "Manage Roles",
                 style: TextStyle(
@@ -40,8 +38,6 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Role List
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
@@ -66,39 +62,59 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
                       itemCount: roles.length,
                       itemBuilder: (context, index) {
                         final roleData = roles[index];
-                        final roleName =
-                            roleData.id; // Document ID is the role name
+                        final roleName = roleData.id;
+                        final permissions = (roleData['permissions']
+                                as Map<String, dynamic>?)
+                            ?.map((key, value) => MapEntry(key, value as bool));
 
                         return Card(
-                          elevation: 5,
+                          elevation: 10,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: ListTile(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          child: ExpansionTile(
                             title: Text(
                               roleName,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                color: Colors.blueAccent,
                               ),
                             ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // Edit button
-                                IconButton(
-                                  icon: const Icon(Icons.edit,
-                                      color: Colors.blue),
-                                  onPressed: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (_) =>
-                                          RoleForm(roleName: roleName),
-                                    );
-                                  },
+                            // ExpansionTile automatically handles icon direction
+                            children: [
+                              permissions == null
+                                  ? const ListTile(
+                                      title: Text('No permissions set'))
+                                  : Column(
+                                      children:
+                                          permissions.entries.map((entry) {
+                                        return Row(
+                                          children: [
+                                            Checkbox(
+                                              value: entry.value,
+                                              onChanged:
+                                                  null, // Permissions are read-only here
+                                            ),
+                                            Text(
+                                              entry.key,
+                                              style: const TextStyle(
+                                                color: Colors.black87,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      }).toList(),
+                                    ),
+                              // Include the delete button
+                              ListTile(
+                                title: const Text(
+                                  'Delete Role',
+                                  style: TextStyle(color: Colors.red),
                                 ),
-
-                                // Delete button
-                                IconButton(
+                                trailing: IconButton(
                                   icon: const Icon(Icons.delete,
                                       color: Colors.red),
                                   onPressed: () async {
@@ -116,10 +132,7 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
                                                 'Role deleted successfully!')),
                                       );
                                     } catch (e) {
-                                      // Log the technical details
                                       debugPrint('Firestore Error: $e');
-
-                                      // Show user-friendly error message
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         const SnackBar(
@@ -129,8 +142,8 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
                                     }
                                   },
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         );
                       },
@@ -142,8 +155,6 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
           ),
         ),
       ),
-
-      // Floating Action Button for adding new roles
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           showDialog(

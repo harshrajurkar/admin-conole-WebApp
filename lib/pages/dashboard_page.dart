@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../widgets/custom_app_bar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:vrv_security/pages/login_page.dart';
 import 'user_management_page.dart';
 import 'role_management_page.dart';
 import 'permission_management_page.dart';
@@ -12,13 +13,48 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  // Stream to get the count of users
+  Stream<int> _getUserCount() {
+    return firestore
+        .collection('users')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  // Stream to get the count of active users
+  Stream<int> _getActiveUserCount() {
+    return firestore
+        .collection('users')
+        .where('isActive', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  // Stream to get the count of roles
+  Stream<int> _getRoleCount() {
+    return firestore
+        .collection('roles')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = screenWidth > 600;
 
     return Scaffold(
-      appBar: const CustomAppBar(title: "Dashboard"),
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _logout,
+          ),
+        ],
+      ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -32,7 +68,6 @@ class _DashboardPageState extends State<DashboardPage> {
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text(
                   'Welcome to the Admin Dashboard!',
@@ -43,6 +78,50 @@ class _DashboardPageState extends State<DashboardPage> {
                     color: Colors.white,
                   ),
                 ),
+                const SizedBox(height: 30),
+
+                // Stats Row for Total Users, Active Users, and Roles
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    // Total Users Card
+                    StreamBuilder<int>(
+                      stream: _getUserCount(),
+                      builder: (context, snapshot) {
+                        final userCount = snapshot.data ?? 0;
+                        return _buildStatCard(
+                          'Total Users',
+                          userCount.toString(),
+                        );
+                      },
+                    ),
+
+                    // Active Users Card
+                    StreamBuilder<int>(
+                      stream: _getActiveUserCount(),
+                      builder: (context, snapshot) {
+                        final activeUserCount = snapshot.data ?? 0;
+                        return _buildStatCard(
+                          'Active Users',
+                          activeUserCount.toString(),
+                        );
+                      },
+                    ),
+
+                    // Total Roles Card
+                    StreamBuilder<int>(
+                      stream: _getRoleCount(),
+                      builder: (context, snapshot) {
+                        final roleCount = snapshot.data ?? 0;
+                        return _buildStatCard(
+                          'Total Roles',
+                          roleCount.toString(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+
                 const SizedBox(height: 30),
 
                 // Card container for buttons
@@ -120,6 +199,39 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  // Helper method to build stat cards
+  Widget _buildStatCard(String label, String value) {
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      elevation: 5,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // Helper method to build responsive action buttons
   Widget _buildActionButton(
     BuildContext context, {
@@ -149,6 +261,14 @@ class _DashboardPageState extends State<DashboardPage> {
         elevation: 5,
       ),
       onPressed: onPressed,
+    );
+  }
+
+  // Method to handle logout
+  void _logout() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
     );
   }
 }
